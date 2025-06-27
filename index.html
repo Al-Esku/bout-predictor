@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<body>
+    <div style="display: flex; width: 100%; justify-content: space-between">
+        <div style="display: block">
+            Team 1
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer1Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer1Rating">
+                </label>
+            </div>
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer2Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer2Rating">
+                </label>
+            </div>
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer3Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer3Rating">
+                </label>
+            </div>
+        </div>
+        <div style="display: block">
+            Team 2
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer4Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer4Rating">
+                </label>
+            </div>
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer5Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer5Rating">
+                </label>
+            </div>
+            <div>
+                <label>
+                    Name
+                    <input type="text" id="fencer6Name"/>
+                </label>
+                <label>
+                    Rating
+                    <input type="number" id="fencer6Rating">
+                </label>
+            </div>
+        </div>
+    </div>
+    <label>
+        <input type="button" value="Predict" onclick="calculateProb()">
+    </label>
+    <div style="display: flex; justify-content: center">
+        <h3>Win Probabilities</h3>
+    </div>
+    <div style="display: flex; width: 100%; justify-content: space-between">
+        <div id="team1Result"></div>
+        <div id="team2Result"></div>
+    </div>
+    <div style="display: flex; justify-content: center">
+        <h3>At least 1 win</h3>
+    </div>
+    <div style="display: flex; width: 100%; justify-content: space-between">
+        <div style="display: block">
+            <div id="fencer1Result"></div>
+            <div id="fencer2Result"></div>
+            <div id="fencer3Result"></div>
+        </div>
+        <div style="display: block">
+            <div id="fencer4Result"></div>
+            <div id="fencer5Result"></div>
+            <div id="fencer6Result"></div>
+        </div>
+    </div>
+    <script>
+        function individualProb(rating1, rating2) {
+            return 1 / (1 + Math.pow(10, (rating2 - rating1) / 400))
+        }
+
+        function directConvolution(probArray) {
+            let pmf = [1]
+            for (let i = 0; i < probArray.length; i++) {
+                let nextPMF = [(1-probArray[i]) * pmf[0]]
+                for (let k = 1; k <= i; k++) {
+                    nextPMF.push(probArray[i] * pmf[k-1] + ((1 - probArray[i]) * pmf[k]))
+                }
+                nextPMF.push(probArray[i]*pmf[i])
+                pmf = nextPMF
+            }
+            return pmf
+        }
+
+        function calculateProb() {
+            let probArray = []
+            for (let i = 1; i <= 3; i++) {
+                for (let j = 4; j <= 6; j++) {
+                    const rating1 = document.getElementById(`fencer${i}Rating`).value
+                    const rating2 = document.getElementById(`fencer${j}Rating`).value
+                    probArray.push(individualProb(rating1, rating2))
+                }
+            }
+            const pmf = directConvolution(probArray)
+            const p = pmf[5] + pmf[6] + pmf[7] + pmf[8] + pmf[9]
+
+            let team1Result = document.getElementById("team1Result")
+            team1Result.innerText = `${(p*100).toPrecision(4)}%`
+            let team2Result = document.getElementById("team2Result")
+            team2Result.innerText = `${((1-p)*100).toPrecision(4)}%`
+
+            let resultArray = []
+            for (let i = 1; i <= 3; i++) {
+                let fencerProbArray = []
+                for (let j = 4; j <= 6; j++) {
+                    const rating1 = document.getElementById(`fencer${i}Rating`).value
+                    const rating2 = document.getElementById(`fencer${j}Rating`).value
+                    fencerProbArray.push(individualProb(rating1, rating2))
+                }
+                resultArray.push(1 - directConvolution(fencerProbArray)[0])
+            }
+            for (let i = 4; i <= 6; i++) {
+                let fencerProbArray = []
+                for (let j = 1; j <= 3; j++) {
+                    const rating1 = document.getElementById(`fencer${i}Rating`).value
+                    const rating2 = document.getElementById(`fencer${j}Rating`).value
+                    fencerProbArray.push(individualProb(rating1, rating2))
+                }
+                resultArray.push(1 - directConvolution(fencerProbArray)[0])
+            }
+            resultArray.forEach((result, index) => {
+                let fencerResult = document.getElementById(`fencer${index+1}Result`)
+                let fencerName = document.getElementById(`fencer${index+1}Name`).value
+                fencerResult.innerText = `${fencerName}: ${(result*100).toPrecision(4)}%`
+            })
+        }
+    </script>
+</body>
